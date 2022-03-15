@@ -1,18 +1,13 @@
-import telebot;
-bot = telebot.TeleBot('5277263469:AAF5QhoRLb2mATz92atasY-KkHv7U-FfdOU')
+from .models import News, Proposal
 
+def get_last_news():
+    newsArray=''
+    news = News.objects.all()[:3]
+    for n in news:
+        newsArray+=str(n.title) + '\n ' + str(n.text) + '\n' + '*****************************' + '\n'
+    print(newsArray)
+    return newsArray
 
-@bot.message_handler(content_types=['text'])
-def get_text_messages(message):
-    if message.text == "Привет":
-        bot.send_message(message.from_user.id, "Привет, чем я могу тебе помочь?")
-    elif message.text == "/help":
-        bot.send_message(message.from_user.id, "Напиши привет")
-    else:
-        bot.send_message(message.from_user.id, "Я тебя не понимаю. Напиши11 /help.")
-
-bot.polling(none_stop=True, interval=0)
-
-
-
-
+def create_proposal(message):
+    propos=Proposal.objects.create(description=message)
+    return 'Создано обращение под номером %s. В ближайшее время оно будет рассмотрено' % propos.id

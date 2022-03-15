@@ -1,6 +1,7 @@
 from django.db import models
 
 from django.db import models
+from .views import *
 
 class News(models.Model):
     title = models.CharField(max_length=128)
@@ -30,19 +31,19 @@ class Status(models.Model):
         verbose_name_plural='Статусы'
 
 class Proposal(models.Model):
-    title = models.CharField(max_length=128)
-    text = models.TextField(null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
     status = models.ForeignKey(Status, blank=True, null=True, on_delete=models.CASCADE)
-    reply = models.TextField(null=True, blank=True)
+    reply = models.TextField(null=True, blank=True, default=None)
     created = models.DateTimeField(auto_now_add=True, auto_now=False)
     updated = models.DateTimeField(auto_now_add=False, auto_now=True)
 
     def __str__(self):
-        return 'Предложение %s под номером %s' % (self.name, self.id)
+        return 'Предложение под номером %s' % ( self.id)
 
     class Meta:
         verbose_name = 'Жалоба/предложение'
         verbose_name_plural = 'Жалобы/предложения'
+
 
 class Admission(models.Model):
     flat_number = models.IntegerField()
