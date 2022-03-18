@@ -1,11 +1,21 @@
 from django.db import models
-
+from phonenumber_field.modelfields import PhoneNumberField
 from django.db import models
-from .views import *
+
+class TelegramUser(models.Model):
+    username = models.CharField("Имя пользователя", max_length=128)
+    flatNumber=models.IntegerField("Номер квартиры", blank=True, default=None)
+
+    def __str__(self):
+        return self.username
+
+    class Meta:
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
 
 class News(models.Model):
-    title = models.CharField(max_length=128)
-    text = models.TextField(null=True, blank=True)
+    title = models.CharField("Заголовок", max_length=128)
+    text = models.TextField("Основной текст", null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True, auto_now=False)
     updated = models.DateTimeField(auto_now_add=False, auto_now=True)
 
@@ -17,44 +27,41 @@ class News(models.Model):
         verbose_name_plural = 'Новости'
 
 
-
 class Status(models.Model):
-    name=models.CharField(max_length=20, blank=True, default=None)
-    active=models.BooleanField(default=True)
+    name=models.CharField("Название статуса", max_length=20, blank=True, default=None)
 
     def __str__(self):
-        return ' Статус заказа %s' % self.name
-
+        return self.name
 
     class Meta:
         verbose_name='Статус заказа'
         verbose_name_plural='Статусы'
 
 class Proposal(models.Model):
-    description = models.TextField(null=True, blank=True)
+    description = models.TextField("Описание", null=True, blank=True)
     status = models.ForeignKey(Status, blank=True, null=True, on_delete=models.CASCADE)
-    reply = models.TextField(null=True, blank=True, default=None)
+    user = models.ForeignKey(TelegramUser, blank=True, null=True, on_delete=models.CASCADE)
+    reply = models.TextField("Ответ на предложение", null=True, blank=True, default=None)
     created = models.DateTimeField(auto_now_add=True, auto_now=False)
     updated = models.DateTimeField(auto_now_add=False, auto_now=True)
 
     def __str__(self):
-        return 'Предложение под номером %s' % ( self.id)
+        return ' № %s Жалоба:%s \n Текущий статус:%s \n Ответ: %s \n '  % (self.id, self.description, self.status, self.reply)
 
     class Meta:
         verbose_name = 'Жалоба/предложение'
         verbose_name_plural = 'Жалобы/предложения'
 
-
 class Admission(models.Model):
-    flat_number = models.IntegerField()
-    car_number = models.CharField(max_length=10, blank=True, null=True)
-    fio = models.CharField(max_length=100)
-    reason = models.TextField(blank=True, null=True)
+    user = models.ForeignKey(TelegramUser, blank=True, null=True, on_delete=models.CASCADE)
+    carNumber = models.CharField("Номер машины", max_length=10, blank=True, null=True)
+    fio = models.CharField("ФИО", max_length=100)
+    reason = models.TextField("Комментарии", blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True, auto_now=False)
     updated = models.DateTimeField(auto_now_add=False, auto_now=True)
 
     def __str__(self):
-        return 'Заказ на пропуск %s' % (self.id)
+        return 'Заказ № %s на пропуск %s в квартиру № %s оформлен' % (self.id, self.fio, self.user.flatNumber)
 
     class Meta:
         verbose_name = 'Заказ на пропуск'
@@ -62,38 +69,53 @@ class Admission(models.Model):
 
 
 class EmployeeType(models.Model):
-    name = models.IntegerField(blank=True, null=True)
-    description = models.TextField()
+    name = models.CharField("Название специальности", max_length=40)
 
     def __str__(self):
-        return (self.id)
+        return self.name
 
     class Meta:
         verbose_name = 'Специализация'
         verbose_name_plural = 'Специализации'
 
 class EmployeeCalling(models.Model):
-    flat_number = models.IntegerField(blank=True, null=True)
-    employee_type = models.ForeignKey(EmployeeType, blank=True, null=True, on_delete=models.CASCADE)
+    user = models.ForeignKey(TelegramUser, blank=True, null=True, on_delete=models.CASCADE)
+    employeeType = models.ForeignKey(EmployeeType, blank=True, null=True, on_delete=models.CASCADE)
     created = models.DateTimeField(auto_now_add=True, auto_now=False)
     updated = models.DateTimeField(auto_now_add=False, auto_now=True)
 
     def __str__(self):
-        return '%s в квартиру №%s' % (self.employee_type.name, self.flat_number)
+        return 'Оформлен вызов %s в квартиру №%s' % (self.employeeType, self.user.flatNumber)
 
     class Meta:
         verbose_name = 'Вызов работника ЖКХ'
         verbose_name_plural = 'Вызовы работников ЖКХ'
 
+
+class CounterValue(models.Model):
+    user = models.ForeignKey(TelegramUser, blank=True, null=True, on_delete=models.CASCADE)
+    electic = models.IntegerField("Электричество", blank=True, null=True)
+    coldWater = models.IntegerField("Холодная вода", blank=True, null=True)
+    hotWater = models.IntegerField("Горячая вода", blank=True, null=True)
+
+    def __str__(self):
+        return 'Квартира: %s \n Электричество:%s,\n Холодная вода: %s,\n Теплая вода: %s\n\n'\
+               % (self.user.flatNumber,  self.electic, self.coldWater, self.hotWater)
+
+    class Meta:
+        verbose_name = 'Показание счетчика'
+        verbose_name_plural = 'Показания счетчиков'
+
 class Contacts(models.Model):
-    fio = models.CharField(max_length=100, blank=True, null=True)
-    post = models.CharField(max_length=100)
-    description = models.TextField()
+    fio = models.CharField("ФИО", max_length=100, blank=True, null=True)
+    post = models.CharField("Должность", max_length=100)
+    phoneNumber=PhoneNumberField("Номер телефона (Например: +79876543210")
+    description = models.TextField("Описание")
     created = models.DateTimeField(auto_now_add=True, auto_now=False)
     updated = models.DateTimeField(auto_now_add=False, auto_now=True)
 
     def __str__(self):
-        return '%s %s' % (self.post, self.fio)
+        return '%s \n%s тел. %s \n \n' % (self.post, self.fio, self.phoneNumber)
 
     class Meta:
         verbose_name = 'Контакт'

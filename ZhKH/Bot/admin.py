@@ -1,6 +1,11 @@
 from django.contrib import admin
 from .models import *
 
+class TelegramUserAdmin(admin.ModelAdmin):
+    class Meta:
+        model=TelegramUser
+
+admin.site.register(TelegramUser, TelegramUserAdmin)
 
 class NewsAdmin(admin.ModelAdmin):
     class Meta:
@@ -47,5 +52,13 @@ class ContactsAdmin(admin.ModelAdmin):
         model = Contacts
 
 admin.site.register(Contacts, ContactsAdmin)
+
+class CounterValueAdmin(admin.ModelAdmin):
+    class Meta:
+        model = CounterValue
+
+admin.site.register(CounterValue, CounterValueAdmin)
+
+
 
 
