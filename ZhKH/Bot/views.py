@@ -1,6 +1,7 @@
 from .models import News, Proposal,\
     TelegramUser, Admission, EmployeeType,\
-    EmployeeCalling, CounterValue, Contacts
+    EmployeeCalling, CounterValue, Contacts, \
+    CarType, TimesLimit
 
 def auth(username):
     if TelegramUser.objects.filter(username=username).last() == None:
@@ -24,14 +25,29 @@ def get_proposals(username):
     propos = Proposal.objects.filter(user_id=user.id)
     return propos
 
+def get_car_types():
+    return CarType.objects.all()
+
+def get_time_limits_types():
+    return TimesLimit.objects.all()
+
 def create_admission(kwargs, username):
     user = TelegramUser.objects.filter(username=username).last()
-    adm=Admission.objects.create(
-        user_id=user.id,
-        carNumber=kwargs['carNumber'],
-        fio=kwargs['fio'],
-        reason=kwargs['comment'],
-    )
+    if kwargs['carType']=='3':
+        adm = Admission.objects.create(
+            user_id=user.id,
+            fio=kwargs['fio'],
+            reason=kwargs['comment'],
+        )
+    else:
+        adm=Admission.objects.create(
+            user_id=user.id,
+            timeLimit_id=int(kwargs['timeLimit']),
+            carType_id=int(kwargs['carType']),
+            carNumber=kwargs['carNumber'],
+            fio=kwargs['fio'],
+            reason=kwargs['comment'],
+        )
     return adm
 
 def get_specialities():

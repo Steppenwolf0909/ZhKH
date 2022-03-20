@@ -34,7 +34,7 @@ class Command(BaseCommand):
             else:
                 if message.text == "Новости":
                     news = views.get_last_news()
-                    bot.send_message(message.from_user.id, news)
+                    bot.send_message(message.from_user.id, news, reply_markup=self.markup)
                 elif message.text == "Жалобы/предложения":
                     keyboard = telebot.types.InlineKeyboardMarkup()
                     keyboard.row(
@@ -46,7 +46,13 @@ class Command(BaseCommand):
                     bot.send_message(message.chat.id, text='Жалобы/предложения', reply_markup=keyboard)
 
                 elif message.text == "Заказать пропуск":
-                        set_fio_admission(message)
+                    keyboard = telebot.types.InlineKeyboardMarkup()
+                    carTypes = views.get_car_types()
+                    for i in carTypes:
+                        keyboard.row(
+                            telebot.types.InlineKeyboardButton(i.name, callback_data='get_car_types%s' % i.id)
+                        )
+                    bot.send_message(message.chat.id, text='Выберите тип машины', reply_markup=keyboard)
 
 
                 elif message.text == "Вызов сотрудника ЖКХ":
@@ -73,7 +79,7 @@ class Command(BaseCommand):
                     get_contacts(message)
 
                 else:
-                    bot.send_message(message.from_user.id, "Я Вас не понимаю. Введите '/start' и выберите пункт меню")
+                    bot.send_message(message.from_user.id, "Я Вас не понимаю. Выберите пункт меню", reply_markup=self.markup)
 
         @bot.callback_query_handler(func=lambda call: True)
         def get_callback(query):
@@ -92,36 +98,85 @@ class Command(BaseCommand):
             if query.data == 'save_counters':
                 save_counters(query.message)
 
+            if 'get_car_types' in query.data:
+                set_carType_admission(query.message, query.data[-1])
+
+            if 'get_timeLimits' in query.data:
+                set_carNumber_admission(query.message,timeLimit=query.data[-2], carType=query.data[-1] )
+
       # -------------------------------------Proposals
         def create_proposal(message):
             if not message.text in self.keyboard:
                 resp = views.create_proposal(message)
-                bot.send_message(message.from_user.id, resp)
+                bot.send_message(message.from_user.id, resp, reply_markup=self.markup)
             else:
                 callback_worker(message)
 
         def get_proposals(query):
             my_props = views.get_proposals(query.from_user.username)
             for p in my_props:
-                bot.send_message(query.message.chat.id, p)
+                bot.send_message(query.message.chat.id, p, reply_markup=self.markup)
 
         # -----------------------------------Admission
 
-        def set_fio_admission(message):
-            bot.send_message(message.from_user.id, "Напишите ФИО")
-            bot.register_next_step_handler(message, set_carNumber_admission)
-
-        def set_carNumber_admission(message):
+        def set_carType_admission(message, carType):
             if not message.text in self.keyboard:
-                bot.send_message(message.from_user.id, "Напишите номер автомобиля (если есть)")
-                bot.register_next_step_handler(message, set_comments_admission, fio=message.text)
+                if carType == '3':
+                    set_fio_admission(message, carType=carType)
+                else:
+                    keyboard = telebot.types.InlineKeyboardMarkup()
+                    timeLimits = views.get_time_limits_types()
+                    for i in timeLimits:
+                        keyboard.row(
+                            telebot.types.InlineKeyboardButton(i.name, callback_data='get_timeLimits%s%s' % (i.id, carType))
+                        )
+                    bot.send_message(message.chat.id, text='Выберите срок действия пропуска', reply_markup=keyboard)
             else:
                 callback_worker(message)
 
+
+
+        def set_carNumber_admission(message, **kwargs):
+            if not message.text in self.keyboard:
+                bot.send_message(message.chat.id, "Напишите номер автомобиля (если есть)", reply_markup=self.markup)
+                bot.register_next_step_handler(message, set_fio_admission,
+                                               timeLimit=kwargs['timeLimit'],
+                                               carType=kwargs['carType']
+                                               )
+            else:
+                callback_worker(message)
+
+        def set_fio_admission(message, **kwargs):
+            if kwargs['carType']=='3':
+                bot.send_message(message.chat.id, "Напишите ФИО", reply_markup=self.markup)
+                bot.register_next_step_handler(message, set_comments_admission, carType=kwargs['carType'])
+
+            else:
+                bot.send_message(message.from_user.id, "Напишите ФИО", reply_markup=self.markup)
+                bot.register_next_step_handler(message, set_comments_admission,
+                                               timeLimit=kwargs['timeLimit'],
+                                               carType=kwargs['carType'],
+                                               carNumber=message.text
+                                               )
+
+
+
         def set_comments_admission(message, **kwargs):
             if not message.text in self.keyboard:
-                bot.send_message(message.from_user.id, "Напишите комментарии(если имеются)")
-                bot.register_next_step_handler(message, create_admission, fio=kwargs['fio'], carNumber=message.text)
+                bot.send_message(message.from_user.id, "Напишите комментарии(если имеются)", reply_markup=self.markup)
+                if kwargs['carType']=='3':
+                    bot.register_next_step_handler(message, create_admission,
+                                                   fio=message.text,
+                                                   carType=kwargs['carType']
+                                                   )
+                else:
+                    bot.register_next_step_handler(message, create_admission,
+                                                   timeLimit=kwargs['timeLimit'],
+                                                   carType=kwargs['carType'],
+                                                   carNumber=kwargs['carNumber'],
+                                                   fio=message.text
+                                                   )
+
             else:
                 callback_worker(message)
 
@@ -129,7 +184,7 @@ class Command(BaseCommand):
             if not message.text in self.keyboard:
                 kwargs['comment'] = message.text
                 resp = views.create_admission(kwargs, message.from_user.username)
-                bot.send_message(message.from_user.id, resp)
+                bot.send_message(message.from_user.id, resp, reply_markup=self.markup)
             else:
                 callback_worker(message)
 
@@ -138,30 +193,30 @@ class Command(BaseCommand):
         def save_employee_calling(message, employeeId):
             if not message.text in self.keyboard:
                 resp = views.save_employee_calling(message, employeeId)
-                bot.send_message(message.chat.id, resp)
+                bot.send_message(message.chat.id, resp, reply_markup=self.markup)
             else:
                 callback_worker(message)
 
         # -----------------------------------Counters
         def get_counters(message):
             resp=views.get_counters(message.chat.username)
-            bot.send_message(message.chat.id, resp)
+            bot.send_message(message.chat.id, resp, reply_markup=self.markup)
 
         def save_counters(message):
-            bot.send_message(message.chat.id, "Напишите показания счетчика горячей воды")
+            bot.send_message(message.chat.id, "Напишите показания счетчика горячей воды", reply_markup=self.markup)
             bot.register_next_step_handler(message, save_hotWater_counter)
 
         def save_hotWater_counter(message):
             try:
                 int(message.text)
                 if not message.text in self.keyboard:
-                    bot.send_message(message.from_user.id, "Напишите показания счетчика холодной воды")
                     views.save_HotWater_counters(message.text, message.from_user.username)
+                    bot.send_message(message.from_user.id, "Напишите показания счетчика холодной воды", reply_markup=self.markup)
                     bot.register_next_step_handler(message, save_coldWater_counter)
                 else:
                     callback_worker(message)
             except:
-                bot.send_message(message.from_user.id, "Ошибка! Введите число!")
+                bot.send_message(message.from_user.id, "Ошибка! Введите число!", reply_markup=self.markup)
                 save_counters(message)
 
 
@@ -169,20 +224,20 @@ class Command(BaseCommand):
             try:
                 int(message.text)
                 if not message.text in self.keyboard:
-                    resp = views.save_HotWater_counters(message.text, message.from_user.username)
-                    bot.send_message(message.from_user.id, resp)
+                    resp = views.save_ColdWater_counters(message.text, message.from_user.username)
+                    bot.send_message(message.from_user.id, resp, reply_markup=self.markup)
                 else:
                     callback_worker(message)
             except:
-                bot.send_message(message.from_user.id, "Ошибка! Введите число!")
+                bot.send_message(message.from_user.id, "Ошибка! Введите число!", reply_markup=self.markup)
                 message.text=1
-                save_hotWater_counter(message)
+                save_counters(message)
 
 
 
         # -----------------------------------Contacts
         def get_contacts(message):
             resp=views.get_contacts()
-            bot.send_message(message.from_user.id, resp)
+            bot.send_message(message.from_user.id, resp, reply_markup=self.markup)
 
         bot.polling(none_stop=True, interval=0)

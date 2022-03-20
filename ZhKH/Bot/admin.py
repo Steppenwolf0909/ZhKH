@@ -59,6 +59,19 @@ class CounterValueAdmin(admin.ModelAdmin):
 
 admin.site.register(CounterValue, CounterValueAdmin)
 
+class TimesLimitAdmin(admin.ModelAdmin):
+    class Meta:
+        model = TimesLimit
+
+admin.site.register(TimesLimit, TimesLimitAdmin)
+
+class CarTypeAdmin(admin.ModelAdmin):
+    class Meta:
+        model = CarType
+
+admin.site.register(CarType, CarTypeAdmin)
+
+
 
 
 

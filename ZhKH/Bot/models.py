@@ -52,8 +52,30 @@ class Proposal(models.Model):
         verbose_name = 'Жалоба/предложение'
         verbose_name_plural = 'Жалобы/предложения'
 
+class CarType(models.Model):
+    name=models.CharField("Тип автомобиля", max_length=20, blank=True, default=None)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name='Тип автомобиля'
+        verbose_name_plural='Типы автомобилей'
+
+class TimesLimit(models.Model):
+    name=models.CharField("Времянной интервал", max_length=20, blank=True, default=None)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name='Времянной интервал'
+        verbose_name_plural='Времянные интервалы'
+
 class Admission(models.Model):
     user = models.ForeignKey(TelegramUser, blank=True, null=True, on_delete=models.CASCADE)
+    carType = models.ForeignKey(CarType, blank=True, null=True, on_delete=models.CASCADE)
+    timeLimit = models.ForeignKey(TimesLimit, blank=True, null=True, on_delete=models.CASCADE)
     carNumber = models.CharField("Номер машины", max_length=10, blank=True, null=True)
     fio = models.CharField("ФИО", max_length=100)
     reason = models.TextField("Комментарии", blank=True, null=True)
@@ -61,7 +83,11 @@ class Admission(models.Model):
     updated = models.DateTimeField(auto_now_add=False, auto_now=True)
 
     def __str__(self):
-        return 'Заказ № %s на пропуск %s в квартиру № %s оформлен' % (self.id, self.fio, self.user.flatNumber)
+        if self.carType==None:
+            return 'Заказ на пропуск № %s \n для %s в квартиру № %s оформлен' % (self.id, self.fio, self.user.flatNumber)
+
+        else:
+            return 'Заказ на пропуск № %s \n ФИО: %s \n квартира № %s \n автомобиль: %s (%s) \n оформлен на срок %s' % (self.id, self.fio, self.user.flatNumber, self.carType, self.carNumber, self.timeLimit)
 
     class Meta:
         verbose_name = 'Заказ на пропуск'
