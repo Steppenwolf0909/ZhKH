@@ -152,19 +152,32 @@ class Command(BaseCommand):
             bot.register_next_step_handler(message, save_hotWater_counter)
 
         def save_hotWater_counter(message):
-            if not message.text in self.keyboard:
-                bot.send_message(message.from_user.id, "Напишите показания счетчика холодной воды воды")
-                bot.register_next_step_handler(message, save_coldWater_counter, hotWater=message.text)
-            else:
-                callback_worker(message)
+            try:
+                int(message.text)
+                if not message.text in self.keyboard:
+                    bot.send_message(message.from_user.id, "Напишите показания счетчика холодной воды")
+                    views.save_HotWater_counters(message.text, message.from_user.username)
+                    bot.register_next_step_handler(message, save_coldWater_counter)
+                else:
+                    callback_worker(message)
+            except:
+                bot.send_message(message.from_user.id, "Ошибка! Введите число!")
+                save_counters(message)
 
-        def save_coldWater_counter(message, **kwargs):
-            if not message.text in self.keyboard:
-                kwargs['coldWater'] = message.text
-                resp = views.save_counters(kwargs, message.from_user.username)
-                bot.send_message(message.from_user.id, resp)
-            else:
-                callback_worker(message)
+
+        def save_coldWater_counter(message):
+            try:
+                int(message.text)
+                if not message.text in self.keyboard:
+                    resp = views.save_HotWater_counters(message.text, message.from_user.username)
+                    bot.send_message(message.from_user.id, resp)
+                else:
+                    callback_worker(message)
+            except:
+                bot.send_message(message.from_user.id, "Ошибка! Введите число!")
+                message.text=1
+                save_hotWater_counter(message)
+
 
 
         # -----------------------------------Contacts

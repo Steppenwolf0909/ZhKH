@@ -61,6 +61,29 @@ def save_counters(kwargs, username):
     )
     return obj
 
+def save_HotWater_counters(hotWater, username):
+    user = TelegramUser.objects.get(username=username)
+    obj, created = CounterValue.objects.update_or_create(
+        user_id=user.id,
+        defaults={
+            'hotWater':hotWater,
+        },
+    )
+    return obj
+
+
+def save_ColdWater_counters(coldWater, username):
+    user = TelegramUser.objects.get(username=username)
+    obj, created = CounterValue.objects.update_or_create(
+        user_id=user.id,
+        defaults={
+            'coldWater': coldWater,
+        },
+    )
+    return obj
+
+
+
 def get_contacts():
     contacts=Contacts.objects.all()
     usabilityContacts=''
