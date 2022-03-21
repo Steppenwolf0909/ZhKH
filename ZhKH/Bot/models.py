@@ -37,10 +37,22 @@ class Status(models.Model):
         verbose_name='Статус заказа'
         verbose_name_plural='Статусы'
 
+class Urgency(models.Model):
+    name=models.CharField("Наименование категории", max_length=20, blank=True, default=None)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name='Категория срочности'
+        verbose_name_plural='Категории срочности'
+
+
 class Proposal(models.Model):
     description = models.TextField("Описание", null=True, blank=True)
     status = models.ForeignKey(Status, blank=True, null=True, on_delete=models.CASCADE)
     user = models.ForeignKey(TelegramUser, blank=True, null=True, on_delete=models.CASCADE)
+    urgency = models.ForeignKey(Urgency, blank=True, null=True, on_delete=models.CASCADE)
     reply = models.TextField("Ответ на предложение", null=True, blank=True, default=None)
     created = models.DateTimeField(auto_now_add=True, auto_now=False)
     updated = models.DateTimeField(auto_now_add=False, auto_now=True)

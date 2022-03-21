@@ -71,6 +71,13 @@ class CarTypeAdmin(admin.ModelAdmin):
 
 admin.site.register(CarType, CarTypeAdmin)
 
+class UrgencyAdmin(admin.ModelAdmin):
+    class Meta:
+        model = Urgency
+
+admin.site.register(Urgency, UrgencyAdmin)
+
+
 
 
 

@@ -84,8 +84,17 @@ class Command(BaseCommand):
         @bot.callback_query_handler(func=lambda call: True)
         def get_callback(query):
             if query.data == 'create_new_proposal':
-                bot.send_message(query.from_user.id, "Опишите жалобу")
-                bot.register_next_step_handler(query.message, create_proposal)
+                keyboard = telebot.types.InlineKeyboardMarkup()
+                urgencies = views.get_urgencies()
+                for i in urgencies:
+                    keyboard.row(
+                        telebot.types.InlineKeyboardButton(i.name, callback_data='get_urgency%s' % i.id)
+                    )
+                bot.send_message(query.message.chat.id, text='Выберите срок действия пропуска', reply_markup=keyboard)
+
+            if 'get_urgency' in query.data:
+                set_urgency(query.message, query.data[-1])
+
             if query.data == 'get_proposals':
                 get_proposals(query)
 
@@ -105,10 +114,14 @@ class Command(BaseCommand):
                 set_carNumber_admission(query.message,timeLimit=query.data[-2], carType=query.data[-1] )
 
       # -------------------------------------Proposals
-        def create_proposal(message):
+        def set_urgency(message, urgency):
+            bot.send_message(message.chat.id, "Опишите жалобу", reply_markup=self.markup)
+            bot.register_next_step_handler(message, create_proposal, urgency=urgency)
+
+        def create_proposal(message, **kwargs):
             if not message.text in self.keyboard:
-                resp = views.create_proposal(message)
-                bot.send_message(message.from_user.id, resp, reply_markup=self.markup)
+                resp = views.create_proposal(message, kwargs)
+                bot.send_message(message.chat.id, resp, reply_markup=self.markup)
             else:
                 callback_worker(message)
 
@@ -207,31 +220,32 @@ class Command(BaseCommand):
             bot.register_next_step_handler(message, save_hotWater_counter)
 
         def save_hotWater_counter(message):
-            try:
-                int(message.text)
-                if not message.text in self.keyboard:
+            if not message.text in self.keyboard:
+                try:
+                    int(message.text)
                     views.save_HotWater_counters(message.text, message.from_user.username)
                     bot.send_message(message.from_user.id, "Напишите показания счетчика холодной воды", reply_markup=self.markup)
                     bot.register_next_step_handler(message, save_coldWater_counter)
-                else:
-                    callback_worker(message)
-            except:
-                bot.send_message(message.from_user.id, "Ошибка! Введите число!", reply_markup=self.markup)
-                save_counters(message)
+                except:
+                    bot.send_message(message.from_user.id, "Ошибка! Введите число!", reply_markup=self.markup)
+                    save_counters(message)
+            else:
+                callback_worker(message)
 
 
         def save_coldWater_counter(message):
-            try:
-                int(message.text)
-                if not message.text in self.keyboard:
+            if not message.text in self.keyboard:
+                try:
+                    int(message.text)
                     resp = views.save_ColdWater_counters(message.text, message.from_user.username)
                     bot.send_message(message.from_user.id, resp, reply_markup=self.markup)
-                else:
-                    callback_worker(message)
-            except:
-                bot.send_message(message.from_user.id, "Ошибка! Введите число!", reply_markup=self.markup)
-                message.text=1
-                save_counters(message)
+
+                except:
+                    bot.send_message(message.from_user.id, "Ошибка! Введите число!", reply_markup=self.markup)
+                    message.text=1
+                    save_counters(message)
+            else:
+                callback_worker(message)
 
 
 

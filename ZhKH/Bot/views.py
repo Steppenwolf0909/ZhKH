@@ -1,7 +1,7 @@
 from .models import News, Proposal,\
     TelegramUser, Admission, EmployeeType,\
     EmployeeCalling, CounterValue, Contacts, \
-    CarType, TimesLimit
+    CarType, TimesLimit, Urgency
 
 def auth(username):
     if TelegramUser.objects.filter(username=username).last() == None:
@@ -15,9 +15,9 @@ def get_last_news():
         newsArray+=str(n.title) + '\n ' + str(n.text) + '\n' + '*****************************' + '\n'
     return newsArray
 
-def create_proposal(message):
-    user=TelegramUser.objects.filter(username=message.from_user.username).last()
-    propos=Proposal.objects.create(description=message.text, user_id=user.id)
+def create_proposal(message, kwargs):
+    user=TelegramUser.objects.get(username=message.from_user.username)
+    propos=Proposal.objects.create(description=message.text, user_id=user.id, urgency_id=kwargs['urgency'])
     return 'Создано обращение под номером %s. В ближайшее время оно будет рассмотрено' % propos.id
 
 def get_proposals(username):
@@ -106,3 +106,6 @@ def get_contacts():
     for i in contacts:
         usabilityContacts+=str(i)
     return usabilityContacts
+
+def get_urgencies():
+    return Urgency.objects.all()
